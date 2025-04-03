@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tabular QA System</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        .tab { cursor: pointer; padding: 10px 20px; font-weight: bold; }
+        .tab-active { border-bottom: 3px solid blue; color: blue; }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
+    <div class="bg-white shadow-2xl rounded-3xl p-8 w-full max-w-3xl text-center space-y-8">
+        <h1 class="text-4xl font-bold text-blue-600">Tabular QA System</h1>
+        
+        <input type="text" id="question" placeholder="Enter your question..." 
+               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+        <button onclick="searchQuery()" id="search-btn"
+                class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-md">Search</button>
+
+        <div id="loading-animation" class="hidden mt-4">
+            <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+        </div>
+        
+        <div class="flex justify-center space-x-4 mt-6">
+            <span class="tab tab-active" onclick="showTab('answer')">Final Answer</span>
+            <span class="tab" onclick="showTab('metrics')">F1 Score & Accuracy</span>
+        </div>
+
+        <div id="answer-tab" class="mt-6 p-4 bg-gray-50 rounded-lg shadow-md fade-in">
+            <h3 class="text-xl font-semibold text-gray-700">Final Answer:</h3>
+            <p id="final-answer" class="text-gray-600 mt-2">-</p>
+        </div>
+        
+        <div id="metrics-tab" class="mt-6 p-4 bg-gray-50 rounded-lg shadow-md fade-in hidden">
+            <h3 class="text-xl font-semibold text-gray-700">Evaluation Metrics:</h3>
+            <p class="text-gray-600 mt-2">F1 Score: <span id="f1-score" class="font-bold text-blue-600">-</span></p>
+            <p class="text-gray-600">Accuracy: <span id="accuracy" class="font-bold text-purple-600">-</span></p>
+        </div>
+    </div>
+
+    <script>
+        function searchQuery() {
+            let question = document.getElementById("question").value;
+            $("#loading-animation").removeClass("hidden");
+            $("#answer-tab, #metrics-tab").addClass("hidden");
+            $("#search-btn").prop("disabled", true).addClass("opacity-50 cursor-not-allowed");
+
+            $.ajax({
+                url: "/search",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({ question: question }),
+                success: function(response) {
+                    $("#loading-animation").addClass("hidden");
+                    $("#final-answer").text(response.final_answer || "No relevant data found.");
+                    $("#f1-score").text(response.f1_score.toFixed(2));
+                    $("#accuracy").text(response.accuracy.toFixed(2));
+                    $("#answer-tab").removeClass("hidden");
+                    $("#search-btn").prop("disabled", false).removeClass("opacity-50 cursor-not-allowed");
+                },
+                error: function() {
+                    $("#loading-animation").addClass("hidden");
+                    $("#final-answer").text("Error retrieving response. Please try again.");
+                    $("#answer-tab").removeClass("hidden");
+                    $("#search-btn").prop("disabled", false).removeClass("opacity-50 cursor-not-allowed");
+                }
+            });
+        }
+        
+        function showTab(tab) {
+            $(".tab").removeClass("tab-active");
+            if (tab === 'answer') {
+                $("#answer-tab").removeClass("hidden");
+                $("#metrics-tab").addClass("hidden");
+                $(".tab").eq(0).addClass("tab-active");
+            } else {
+                $("#answer-tab").addClass("hidden");
+                $("#metrics-tab").removeClass("hidden");
+                $(".tab").eq(1).addClass("tab-active");
+            }
+        }
+    </script>
+</body>
+</html>
